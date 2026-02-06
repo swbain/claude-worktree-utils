@@ -1,4 +1,4 @@
-# claude-worktree
+# claude-worktree-utils
 
 Create git worktrees with Claude Code configuration automatically copied from the source repo.
 
