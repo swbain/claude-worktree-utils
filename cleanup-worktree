@@ -1,0 +1,85 @@
+#!/bin/bash
+set -euo pipefail
+
+# cleanup-worktree - Remove a git worktree and its Claude Code configuration
+
+#######################################
+# Validate environment and arguments
+#######################################
+
+if [[ $# -lt 1 ]]; then
+    echo "Usage: $0 <branch-name>" >&2
+    exit 1
+fi
+
+BRANCH_NAME="$1"
+
+# Check if we're in a git repo
+if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+    echo "Error: Not inside a git repository" >&2
+    exit 1
+fi
+
+# Ensure we're at the repo root
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+if [[ "$PWD" != "$REPO_ROOT" ]]; then
+    echo "Error: Must run from git repository root ($REPO_ROOT)" >&2
+    exit 1
+fi
+
+# Check for jq dependency
+if ! command -v jq &>/dev/null; then
+    echo "Error: jq is required but not installed" >&2
+    exit 1
+fi
+
+#######################################
+# Derive worktree path
+#######################################
+
+REPO_NAME="$(basename "$PWD")"
+WORKTREE_PATH="$(dirname "$PWD")/${REPO_NAME}-${BRANCH_NAME}"
+
+#######################################
+# Remove worktree
+#######################################
+
+echo "Removing worktree at: $WORKTREE_PATH"
+
+if ! git worktree list | grep -q "$WORKTREE_PATH"; then
+    echo "Error: Worktree not found at $WORKTREE_PATH" >&2
+    exit 1
+fi
+
+git worktree remove "$WORKTREE_PATH"
+echo "Worktree removed"
+
+#######################################
+# Remove from ~/.claude.json
+#######################################
+
+CLAUDE_CONFIG="$HOME/.claude.json"
+
+if [[ -f "$CLAUDE_CONFIG" ]]; then
+    echo "Updating Claude configuration..."
+
+    # Check if the project entry exists before trying to delete
+    if jq -e --arg path "$WORKTREE_PATH" '.projects[$path]' "$CLAUDE_CONFIG" &>/dev/null; then
+        jq --arg path "$WORKTREE_PATH" 'del(.projects[$path])' "$CLAUDE_CONFIG" > "${CLAUDE_CONFIG}.tmp"
+        mv "${CLAUDE_CONFIG}.tmp" "$CLAUDE_CONFIG"
+        echo "Removed project config for: $WORKTREE_PATH"
+    else
+        echo "No project config found for: $WORKTREE_PATH"
+    fi
+else
+    echo "Warning: $CLAUDE_CONFIG not found, skipping config update"
+fi
+
+#######################################
+# Done
+#######################################
+
+echo ""
+echo "Worktree cleanup complete!"
+echo "  Removed: $WORKTREE_PATH"
+echo "  Branch: $BRANCH_NAME (branch still exists, remove manually if needed)"

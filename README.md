@@ -4,8 +4,10 @@ Create git worktrees with Claude Code configuration automatically copied from th
 
 ## Usage
 
+### Create a worktree
+
 ```bash
-./claude-worktree.sh <branch-name>
+./claude-worktree <branch-name>
 ```
 
 Run from a git repository root. The script will:
@@ -16,12 +18,33 @@ Run from a git repository root. The script will:
 4. Copy `.mcp.json` if it exists
 5. Copy `CLAUDE.local.md` if it exists
 
-## Example
+### Example
 
 ```bash
 cd ~/projects/my-app
-claude-worktree.sh feature-xyz
+claude-worktree feature-xyz
 # Creates worktree at ~/projects/my-app-feature-xyz
+```
+
+### Remove a worktree
+
+```bash
+./cleanup-worktree <branch-name>
+```
+
+Run from the same git repository root where you created the worktree. The script will:
+
+1. Remove the worktree at `../<repo-name>-<branch-name>`
+2. Remove the project entry from `~/.claude.json`
+
+Note: The branch itself is not deleted. Remove it manually with `git branch -d <branch-name>` if needed.
+
+### Example
+
+```bash
+cd ~/projects/my-app
+cleanup-worktree feature-xyz
+# Removes worktree at ~/projects/my-app-feature-xyz
 ```
 
 ## What Gets Copied
@@ -48,7 +71,7 @@ Local files (if they exist):
 ## Installation
 
 ```bash
-# Clone or copy the script somewhere in your PATH
-cp claude-worktree.sh ~/.local/bin/
-chmod +x ~/.local/bin/claude-worktree.sh
+# Clone or copy the scripts somewhere in your PATH
+cp claude-worktree cleanup-worktree ~/.local/bin/
+chmod +x ~/.local/bin/claude-worktree ~/.local/bin/cleanup-worktree
 ```
