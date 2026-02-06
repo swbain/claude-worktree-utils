@@ -13,6 +13,8 @@ Run from a git repository root. The script will:
 1. Create a worktree at `../<repo-name>-<branch-name>`
 2. Copy Claude Code project settings from `~/.claude.json`
 3. Copy `.claude/settings.local.json` if it exists
+4. Copy `.mcp.json` if it exists
+5. Copy `CLAUDE.local.md` if it exists
 
 ## Example
 
@@ -32,6 +34,11 @@ From `~/.claude.json` project config:
 - `disabledMcpjsonServers`
 
 The new project also gets `hasTrustDialogAccepted: true` set automatically.
+
+Local files (if they exist):
+- `.claude/settings.local.json` - Local Claude settings
+- `.mcp.json` - Project MCP server configuration
+- `CLAUDE.local.md` - Local project instructions
 
 ## Requirements
 

@@ -65,28 +65,21 @@ if [[ -f "$CLAUDE_CONFIG" ]]; then
     # Create a jq filter to copy project config
     # We read the source project config and copy specific fields to the new project
     jq --arg src "$SOURCE_PROJECT" --arg dest "$WORKTREE_PATH" '
-        # Get the source project config (default to empty object if not found)
+        # Get the source project config
         (.projects[$src] // {}) as $srcConfig |
 
-        # Build new project config with only the fields we want to copy
-        {
-            allowedTools: $srcConfig.allowedTools,
-            mcpServers: $srcConfig.mcpServers,
-            mcpContextUris: $srcConfig.mcpContextUris,
-            enabledMcpjsonServers: $srcConfig.enabledMcpjsonServers,
-            disabledMcpjsonServers: $srcConfig.disabledMcpjsonServers,
-            hasTrustDialogAccepted: true
-        } |
-
-        # Remove null values (fields that were not in source config)
-        with_entries(select(.value != null)) |
-
-        # Set this as the new project config
-        . as $newConfig |
-
-        # Update the main config
-        $ARGS.positional[0] | .projects[$dest] = $newConfig
-    ' --jsonargs "$CLAUDE_CONFIG" < "$CLAUDE_CONFIG" > "${CLAUDE_CONFIG}.tmp"
+        # Update the destination project with copied fields
+        .projects[$dest] = (
+            {
+                allowedTools: $srcConfig.allowedTools,
+                mcpServers: $srcConfig.mcpServers,
+                mcpContextUris: $srcConfig.mcpContextUris,
+                enabledMcpjsonServers: $srcConfig.enabledMcpjsonServers,
+                disabledMcpjsonServers: $srcConfig.disabledMcpjsonServers,
+                hasTrustDialogAccepted: true
+            } | with_entries(select(.value != null))
+        )
+    ' "$CLAUDE_CONFIG" > "${CLAUDE_CONFIG}.tmp"
 
     mv "${CLAUDE_CONFIG}.tmp" "$CLAUDE_CONFIG"
     echo "Added project config for: $WORKTREE_PATH"
@@ -105,6 +98,20 @@ if [[ -f "$LOCAL_SETTINGS" ]]; then
     mkdir -p "$WORKTREE_PATH/.claude"
     cp "$LOCAL_SETTINGS" "$WORKTREE_PATH/$LOCAL_SETTINGS"
     echo "Copied $LOCAL_SETTINGS to worktree"
+fi
+
+# Copy project MCP config if it exists
+if [[ -f ".mcp.json" ]]; then
+    echo "Copying project MCP configuration..."
+    cp ".mcp.json" "$WORKTREE_PATH/.mcp.json"
+    echo "Copied .mcp.json to worktree"
+fi
+
+# Copy local project instructions if they exist
+if [[ -f "CLAUDE.local.md" ]]; then
+    echo "Copying local project instructions..."
+    cp "CLAUDE.local.md" "$WORKTREE_PATH/CLAUDE.local.md"
+    echo "Copied CLAUDE.local.md to worktree"
 fi
 
 #######################################
